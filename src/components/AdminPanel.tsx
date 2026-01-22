@@ -61,6 +61,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
   const [newContent, setNewContent] = useState('');
   const [responseType, setResponseType] = useState<'text' | 'link' | 'horario'>('text');
   const [linkMode, setLinkMode] = useState<'download' | 'redirect'>('redirect');
+  const [editingCommandId, setEditingCommandId] = useState<string | null>(null);
 
   // Form state - Horarios
   const [newGrado, setNewGrado] = useState('');
@@ -157,21 +158,47 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
         ? `${linkMode}|${newContent.trim()}`
         : newContent;
 
-      const inserted = await supaAddCustomCommand({
-        id: '', // Supabase lo genera
-        command: newCommand,
-        description: newDescription,
-        icon: newIcon || '⚙️',
-        response_type: responseType,
-        content: storedContent,
-      } as unknown as SCustomCommand);
+      if (editingCommandId) {
+        // Modo edición
+        const updatedCommand = await supabase
+          .from('custom_commands')
+          .update({
+            command: newCommand,
+            description: newDescription,
+            icon: newIcon || '⚙️',
+            response_type: responseType,
+            content: storedContent,
+          })
+          .eq('id', editingCommandId)
+          .select()
+          .single();
 
-      if (!inserted) {
-        alert('No se pudo guardar el comando');
-        return;
+        if (updatedCommand.error) throw updatedCommand.error;
+
+        setCommands(
+          commands.map(c => c.id === editingCommandId ? mapCommandToLocal(updatedCommand.data) : c)
+        );
+        setEditingCommandId(null);
+        alert('Comando actualizado correctamente');
+      } else {
+        // Modo creación
+        const inserted = await supaAddCustomCommand({
+          id: '', // Supabase lo genera
+          command: newCommand,
+          description: newDescription,
+          icon: newIcon || '⚙️',
+          response_type: responseType,
+          content: storedContent,
+        } as unknown as SCustomCommand);
+
+        if (!inserted) {
+          alert('No se pudo guardar el comando');
+          return;
+        }
+
+        setCommands([mapCommandToLocal(inserted), ...commands]);
       }
 
-      setCommands([mapCommandToLocal(inserted), ...commands]);
       setNewCommand('');
       setNewDescription('');
       setNewIcon('');
@@ -182,6 +209,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
       console.error('Error guardando comando:', e);
       alert('Ocurrió un error al guardar el comando');
     }
+  };
+
+  const editCommand = (cmd: CustomCommand) => {
+    setEditingCommandId(cmd.id);
+    setNewCommand(cmd.command);
+    setNewDescription(cmd.description);
+    setNewIcon(cmd.icon);
+    setResponseType(cmd.responseType);
+    
+    if (cmd.responseType === 'link' && cmd.content.includes('|')) {
+      const [linkType, url] = cmd.content.split('|');
+      setLinkMode(linkType as 'download' | 'redirect');
+      setNewContent(url);
+    } else {
+      setNewContent(cmd.content);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingCommandId(null);
+    setNewCommand('');
+    setNewDescription('');
+    setNewIcon('');
+    setNewContent('');
+    setResponseType('text');
+    setLinkMode('redirect');
   };
 
   const addHorario = async () => {
@@ -545,13 +598,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
                   )}
                 </div>
 
-                <button
-                  onClick={addCommand}
-                  className="flex items-center space-x-2 w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold"
-                >
-                  <Plus className="h-5 w-5" />
-                  <span>Agregar Comando</span>
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={addCommand}
+                    className="flex items-center space-x-2 flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold"
+                  >
+                    <Plus className="h-5 w-5" />
+                    <span>{editingCommandId ? 'Actualizar Comando' : 'Agregar Comando'}</span>
+                  </button>
+                  {editingCommandId && (
+                    <button
+                      onClick={cancelEdit}
+                      className="flex items-center space-x-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-semibold"
+                    >
+                      <X className="h-5 w-5" />
+                      <span>Cancelar</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Commands List */}
@@ -598,9 +662,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
                           </p>
                         </div>
                         <div className="flex items-center space-x-2 ml-4">
-                          <button className={`p-2 rounded-lg transition-colors ${
-                            darkMode ? 'hover:bg-gray-600 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
-                          }`}>
+                          <button
+                            onClick={() => editCommand(cmd)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              darkMode ? 'hover:bg-gray-600 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
+                            }`}
+                            aria-label="Editar comando"
+                          >
                             <Edit2 className="h-4 w-4" />
                           </button>
                           <button
