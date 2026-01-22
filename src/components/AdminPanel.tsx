@@ -225,6 +225,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
     } else {
       setNewContent(cmd.content);
     }
+    
+    // Hacer scroll al formulario después de un pequeño delay para que se actualice el DOM
+    setTimeout(() => {
+      const formElement = document.querySelector('[data-form="command-form"]');
+      if (formElement) {
+        formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 0);
   };
 
   const cancelEdit = () => {
@@ -472,11 +480,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
           activeTab === 'commands' && (
             <div className="space-y-6">
               {/* Add Command Form */}
-              <div className={`${
+              <div data-form="command-form" className={`${
                 darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
               } border rounded-lg p-6`}>
                 <h3 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Agregar Nuevo Comando
+                  {editingCommandId ? 'Editar Comando' : 'Agregar Nuevo Comando'}
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
