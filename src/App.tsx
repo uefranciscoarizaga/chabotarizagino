@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, User, Mic, MicOff, Settings, Trash2, Download, Moon, Sun, Zap, Brain, Lightbulb } from 'lucide-react';
-import { getEventsForCurrentMonth, getEventsByCategory, getUpcomingEvents, searchEventsByTitle, getAllEvents, Event, getHorarioCursoByGrado, getHorarioDocenteByNombre, HorarioCurso, HorarioDocente, getAllHorariosCurso, getAllHorariosDocente, getAllCustomCommands, CustomCommand as SCustomCommand } from './lib/supabase';
+import { getEventsForCurrentMonth, getEventsByCategory, getUpcomingEvents, searchEventsByTitle, getAllEvents, Event, getHorarioCursoByGrado, getHorarioDocenteByNombre, HorarioCurso, HorarioDocente, getAllHorariosCurso, getAllHorariosDocente, getAllCustomCommands, CustomCommand as SCustomCommand, supabase } from './lib/supabase';
 import { Mistral } from '@mistralai/mistralai';
 import { AdminPanel } from './components/AdminPanel';
 
@@ -53,31 +53,64 @@ function App() {
   const [horariosCurso, setHorariosCurso] = useState<HorarioCurso[]>([]);
   const [horariosDocente, setHorariosDocente] = useState<HorarioDocente[]>([]);
   const [customCommands, setCustomCommands] = useState<SCustomCommand[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Cargar listas de horarios para el autocompletado del dropdown
+    // Verificar sesión inicial
     (async () => {
-      try {
-        const [cursos, docentes, customs] = await Promise.all([
-          getAllHorariosCurso(),
-          getAllHorariosDocente(),
-          getAllCustomCommands()
-        ]);
-        setHorariosCurso(cursos || []);
-        setHorariosDocente(docentes || []);
-        setCustomCommands(customs || []);
-      } catch (e) {
-        console.error('Error cargando listas de horarios:', e);
-      }
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data?.session);
     })();
+
+    // Suscribirse a cambios de autenticación
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      const isAuth = !!session;
+      setIsAuthenticated(isAuth);
+      
+      // Si se cierra sesión, reiniciar la página
+      if (!isAuth && _event === 'SIGNED_OUT') {
+        window.location.reload();
+      }
+    });
+
+    return () => {
+      sub.subscription.unsubscribe();
+    };
   }, []);
+
+  useEffect(() => {
+    // Cargar listas de horarios para el autocompletado del dropdown (solo si está autenticado)
+    if (isAuthenticated) {
+      (async () => {
+        try {
+          const [cursos, docentes, customs] = await Promise.all([
+            getAllHorariosCurso(),
+            getAllHorariosDocente(),
+            getAllCustomCommands()
+          ]);
+          setHorariosCurso(cursos || []);
+          setHorariosDocente(docentes || []);
+          setCustomCommands(customs || []);
+        } catch (e) {
+          console.error('Error cargando listas de horarios:', e);
+        }
+      })();
+    }
+  }, [isAuthenticated]);
 
   const filteredCommands = React.useMemo(() => {
     const input = inputText.trim();
     if (!input.startsWith('/')) return [];
     const lower = input.toLowerCase();
 
+    // Si no está autenticado, bloquear comandos de horario
     if (lower.startsWith('/horario')) {
+      if (!isAuthenticated) {
+        return [
+          { text: '/horario', icon: '🔒', description: 'Inicia sesión para usar este comando', disabled: true }
+        ];
+      }
+      
       const rest = lower.replace('/horario', '').trim();
 
       if (rest === '') {
@@ -116,7 +149,7 @@ function App() {
     }));
     const all = [...commands, ...mappedCustoms];
     return all.filter(cmd => cmd.text.toLowerCase().includes(needle));
-  }, [inputText, commands, horariosCurso, horariosDocente, customCommands]);
+  }, [inputText, commands, horariosCurso, horariosDocente, customCommands, isAuthenticated]);
 
   // Función para formatear eventos
   const formatEventsResponse = (events: Event[], title: string): string => {
@@ -735,18 +768,23 @@ function App() {
                     darkMode ? 'bg-gray-700 border border-gray-600' : 'bg-white border border-gray-200'
                   }`}>
                     <div className="max-h-64 overflow-y-auto">
-                      {filteredCommands.map((cmd, index) => (
+                      {filteredCommands.map((cmd: any, index) => (
                         <button
                           key={index}
                           onClick={() => {
+                            // Si está deshabilitado, no hacer nada
+                            if (cmd.disabled) return;
                             // Rellenar el input con la sugerencia, pero NO enviar automáticamente
                             setInputText(cmd.text);
                             setShowCommandPalette(false);
                             // Mantener el foco en el input para que el usuario pueda editar o presionar Enter
                             setTimeout(() => inputRef.current?.focus(), 0);
                           }}
+                          disabled={cmd.disabled}
                           className={`w-full px-4 py-3 text-left transition-colors flex items-center space-x-3 ${
-                            darkMode
+                            cmd.disabled
+                              ? 'opacity-50 cursor-not-allowed'
+                              : darkMode
                               ? 'hover:bg-gray-600 text-gray-100'
                               : 'hover:bg-blue-50 text-gray-900'
                           }`}
