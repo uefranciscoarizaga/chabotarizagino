@@ -1050,11 +1050,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
                           </a>
                         </div>
                         <div className="flex items-center space-x-2 ml-4">
-                          <button className={`p-2 rounded-lg transition-colors ${
-                            darkMode ? 'hover:bg-gray-600 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
-                          }`}>
-                            <Edit2 className="h-4 w-4" />
-                          </button>
                           <button
                             onClick={() => editDocenteHorario(horario)}
                             className={`p-2 rounded-lg transition-colors ${
