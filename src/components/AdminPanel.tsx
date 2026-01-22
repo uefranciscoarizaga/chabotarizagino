@@ -67,11 +67,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
   const [newGrado, setNewGrado] = useState('');
   const [newAnoElectivo, setNewAnoElectivo] = useState('');
   const [newPdfUrl, setNewPdfUrl] = useState('');
+  const [editingHorarioId, setEditingHorarioId] = useState<string | null>(null);
 
   // Form state - Horarios Docentes
   const [newNombreDocente, setNewNombreDocente] = useState('');
   const [newAnoElectivoDocente, setNewAnoElectivoDocente] = useState('');
   const [newPdfUrlDocente, setNewPdfUrlDocente] = useState('');
+  const [editingDocenteId, setEditingDocenteId] = useState<string | null>(null);
 
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -252,19 +254,43 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
     }
 
     try {
-      const inserted = await addHorarioCurso({
-        id: '', // Supabase lo genera
-        grado: newGrado,
-        ano_electivo: newAnoElectivo,
-        pdf_url: newPdfUrl,
-      } as unknown as SHorarioCurso);
+      if (editingHorarioId) {
+        // Modo edición
+        const updated = await supabase
+          .from('horarios_curso')
+          .update({
+            grado: newGrado,
+            ano_electivo: newAnoElectivo,
+            pdf_url: newPdfUrl,
+          })
+          .eq('id', editingHorarioId)
+          .select()
+          .single();
 
-      if (!inserted) {
-        alert('No se pudo guardar el horario');
-        return;
+        if (updated.error) throw updated.error;
+
+        setHorarios(
+          horarios.map(h => h.id === editingHorarioId ? mapHorarioCursoToLocal(updated.data) : h)
+        );
+        setEditingHorarioId(null);
+        alert('Horario actualizado correctamente');
+      } else {
+        // Modo creación
+        const inserted = await addHorarioCurso({
+          id: '', // Supabase lo genera
+          grado: newGrado,
+          ano_electivo: newAnoElectivo,
+          pdf_url: newPdfUrl,
+        } as unknown as SHorarioCurso);
+
+        if (!inserted) {
+          alert('No se pudo guardar el horario');
+          return;
+        }
+
+        setHorarios([mapHorarioCursoToLocal(inserted), ...horarios]);
       }
 
-      setHorarios([mapHorarioCursoToLocal(inserted), ...horarios]);
       setNewGrado('');
       setNewAnoElectivo('');
       setNewPdfUrl('');
@@ -272,6 +298,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
       console.error('Error guardando horario de curso:', e);
       alert('Ocurrió un error al guardar el horario');
     }
+  };
+
+  const editHorario = (horario: Horario) => {
+    setEditingHorarioId(horario.id);
+    setNewGrado(horario.grado);
+    setNewAnoElectivo(horario.anoElectivo);
+    setNewPdfUrl(horario.pdfUrl);
+    
+    setTimeout(() => {
+      const formElement = document.querySelector('[data-form="horario-form"]');
+      if (formElement) {
+        formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 0);
+  };
+
+  const cancelEditHorario = () => {
+    setEditingHorarioId(null);
+    setNewGrado('');
+    setNewAnoElectivo('');
+    setNewPdfUrl('');
   };
 
   const deleteCommand = async (id: string) => {
@@ -309,19 +356,43 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
     }
 
     try {
-      const inserted = await supaAddHorarioDocente({
-        id: '', // Supabase lo genera
-        nombre_docente: newNombreDocente,
-        ano_electivo: newAnoElectivoDocente,
-        pdf_url: newPdfUrlDocente,
-      } as unknown as SHorarioDocente);
+      if (editingDocenteId) {
+        // Modo edición
+        const updated = await supabase
+          .from('horarios_docente')
+          .update({
+            nombre_docente: newNombreDocente,
+            ano_electivo: newAnoElectivoDocente,
+            pdf_url: newPdfUrlDocente,
+          })
+          .eq('id', editingDocenteId)
+          .select()
+          .single();
 
-      if (!inserted) {
-        alert('No se pudo guardar el horario del docente');
-        return;
+        if (updated.error) throw updated.error;
+
+        setHorariosDocentes(
+          horariosDocentes.map(d => d.id === editingDocenteId ? mapHorarioDocenteToLocal(updated.data) : d)
+        );
+        setEditingDocenteId(null);
+        alert('Horario del docente actualizado correctamente');
+      } else {
+        // Modo creación
+        const inserted = await supaAddHorarioDocente({
+          id: '', // Supabase lo genera
+          nombre_docente: newNombreDocente,
+          ano_electivo: newAnoElectivoDocente,
+          pdf_url: newPdfUrlDocente,
+        } as unknown as SHorarioDocente);
+
+        if (!inserted) {
+          alert('No se pudo guardar el horario del docente');
+          return;
+        }
+
+        setHorariosDocentes([mapHorarioDocenteToLocal(inserted), ...horariosDocentes]);
       }
 
-      setHorariosDocentes([mapHorarioDocenteToLocal(inserted), ...horariosDocentes]);
       setNewNombreDocente('');
       setNewAnoElectivoDocente('');
       setNewPdfUrlDocente('');
@@ -329,6 +400,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
       console.error('Error guardando horario de docente:', e);
       alert('Ocurrió un error al guardar el horario del docente');
     }
+  };
+
+  const editDocenteHorario = (docente: HorarioDocente) => {
+    setEditingDocenteId(docente.id);
+    setNewNombreDocente(docente.nombreDocente);
+    setNewAnoElectivoDocente(docente.anoElectivo);
+    setNewPdfUrlDocente(docente.pdfUrl);
+    
+    setTimeout(() => {
+      const formElement = document.querySelector('[data-form="docente-form"]');
+      if (formElement) {
+        formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 0);
+  };
+
+  const cancelEditDocente = () => {
+    setEditingDocenteId(null);
+    setNewNombreDocente('');
+    setNewAnoElectivoDocente('');
+    setNewPdfUrlDocente('');
   };
 
   const deleteHorarioDocente = async (id: string) => {
@@ -699,11 +791,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
           {activeTab === 'horarios' && (
             <div className="space-y-6">
               {/* Add Horario Form */}
-              <div className={`${
+              <div data-form="horario-form" className={`${
                 darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
               } border rounded-lg p-6`}>
                 <h3 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Agregar Nuevo Horario de Curso
+                  {editingHorarioId ? 'Editar Horario de Curso' : 'Agregar Nuevo Horario de Curso'}
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -759,13 +851,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
                   />
                 </div>
 
-                <button
-                  onClick={addHorario}
-                  className="flex items-center space-x-2 w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold"
-                >
-                  <Plus className="h-5 w-5" />
-                  <span>Agregar Horario</span>
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={addHorario}
+                    className="flex items-center space-x-2 flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold"
+                  >
+                    <Plus className="h-5 w-5" />
+                    <span>{editingHorarioId ? 'Actualizar Horario' : 'Agregar Horario'}</span>
+                  </button>
+                  {editingHorarioId && (
+                    <button
+                      onClick={cancelEditHorario}
+                      className="flex items-center space-x-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-semibold"
+                    >
+                      <X className="h-5 w-5" />
+                      <span>Cancelar</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Horarios List */}
@@ -803,9 +906,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
                           </a>
                         </div>
                         <div className="flex items-center space-x-2 ml-4">
-                          <button className={`p-2 rounded-lg transition-colors ${
-                            darkMode ? 'hover:bg-gray-600 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
-                          }`}>
+                          <button
+                            onClick={() => editHorario(horario)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              darkMode ? 'hover:bg-gray-600 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
+                            }`}
+                            aria-label="Editar horario"
+                          >
                             <Edit2 className="h-4 w-4" />
                           </button>
                           <button
@@ -828,11 +935,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
           {activeTab === 'docentes' && (
             <div className="space-y-6">
               {/* Add Horario Docente Form */}
-              <div className={`${
+              <div data-form="docente-form" className={`${
                 darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
               } border rounded-lg p-6`}>
                 <h3 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Agregar Nuevo Horario de Docente
+                  {editingDocenteId ? 'Editar Horario de Docente' : 'Agregar Nuevo Horario de Docente'}
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -888,13 +995,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
                   />
                 </div>
 
-                <button
-                  onClick={addHorarioDocente}
-                  className="flex items-center space-x-2 w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold"
-                >
-                  <Plus className="h-5 w-5" />
-                  <span>Agregar Horario Docente</span>
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={addHorarioDocente}
+                    className="flex items-center space-x-2 flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold"
+                  >
+                    <Plus className="h-5 w-5" />
+                    <span>{editingDocenteId ? 'Actualizar Horario Docente' : 'Agregar Horario Docente'}</span>
+                  </button>
+                  {editingDocenteId && (
+                    <button
+                      onClick={cancelEditDocente}
+                      className="flex items-center space-x-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-semibold"
+                    >
+                      <X className="h-5 w-5" />
+                      <span>Cancelar</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Horarios Docentes List */}
@@ -935,6 +1053,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, darkMod
                           <button className={`p-2 rounded-lg transition-colors ${
                             darkMode ? 'hover:bg-gray-600 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
                           }`}>
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => editDocenteHorario(horario)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              darkMode ? 'hover:bg-gray-600 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
+                            }`}
+                            aria-label="Editar horario de docente"
+                          >
                             <Edit2 className="h-4 w-4" />
                           </button>
                           <button
