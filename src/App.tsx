@@ -202,6 +202,28 @@ function App() {
     try {
       setIsLoadingEvents(true);
       
+      // Verificar comandos personalizados
+      const customCommandMatch = (customCommands || []).find(cc => {
+        const commandPattern = `/${cc.command}`.toLowerCase();
+        return normalizedInput === commandPattern || normalizedInput.startsWith(commandPattern + ' ');
+      });
+
+      if (customCommandMatch) {
+        // Procesar el comando personalizado
+        if (customCommandMatch.response_type === 'text') {
+          return customCommandMatch.content;
+        } else if (customCommandMatch.response_type === 'link') {
+          // Formato: "redirect|url" o "download|url"
+          const [linkType, url] = customCommandMatch.content.split('|');
+          if (linkType === 'download') {
+            return `📥 **${customCommandMatch.description}**\n\nDescarga: [${url}](${url})`;
+          } else {
+            return `🔗 **${customCommandMatch.description}**\n\nEnlace: [${url}](${url})`;
+          }
+        }
+        return customCommandMatch.content;
+      }
+      
       // Horario de curso: /horario curso <grado>
       const matchCurso = normalizedInput.match(/^\/horario\s+curso\s+(.+)$/i);
       if (matchCurso) {
@@ -463,7 +485,14 @@ function App() {
         <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-gradient-to-br from-indigo-400 to-cyan-500 opacity-10 blur-3xl rounded-full animate-pulse" />
       </div>
       {/* Admin Panel Modal */}
-      <AdminPanel isOpen={showAdminPanel} onClose={() => setShowAdminPanel(false)} darkMode={darkMode} />
+      <AdminPanel isOpen={showAdminPanel} onClose={() => {
+        setShowAdminPanel(false);
+        // Recargar comandos personalizados cuando se cierre el panel
+        (async () => {
+          const customs = await getAllCustomCommands();
+          setCustomCommands(customs || []);
+        })();
+      }} darkMode={darkMode} />
       {/* Header */}
       <header className={`${
         darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white/80 border-gray-200'
