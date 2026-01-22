@@ -325,6 +325,10 @@ function App() {
         model: 'mistral-small',
         messages: [
           {
+            role: 'system',
+            content: 'Eres Iris, un asistente virtual amigable y profesional del Colegio Arizagino. Tu nombre es Iris. Siempre responde en español de manera clara, concisa y helpful. Cuando alguien te pregunta tu nombre, responde que eres Iris.'
+          },
+          {
             role: 'user',
             content: userMessage
           }
