@@ -325,10 +325,6 @@ function App() {
         model: 'mistral-small',
         messages: [
           {
-            role: 'system',
-            content: 'Eres Iris, un asistente virtual amigable y profesional del Colegio Arizagino. Tu nombre es Iris. Siempre responde en español de manera clara, concisa y helpful. Cuando alguien te pregunta tu nombre, responde que eres Iris.'
-          },
-          {
             role: 'user',
             content: userMessage
           }
@@ -503,39 +499,46 @@ function App() {
       } group backdrop-blur-md border-b sticky top-0 z-50 transition-colors duration-300 relative`}>
         {/* light underline on hover */}
         <div aria-hidden className="absolute bottom-0 left-0 right-0 h-[2px] opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-transparent via-purple-400/50 to-transparent" />
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <Bot className="h-6 w-6 text-white" />
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+            <div className="w-8 sm:w-10 h-8 sm:h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+              <Bot className="h-5 sm:h-6 w-5 sm:w-6 text-white" />
             </div>
-            <div>
-              <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            <div className="hidden sm:block">
+              <h1 className={`text-lg sm:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 ChatBot Arizagino
               </h1>
-              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              <p className={`text-xs sm:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 Iris • Asistente Virtual con Mistral AI
               </p>
             </div>
+            <div className="sm:hidden">
+              <h1 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Iris
+              </h1>
+            </div>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <button
               onClick={() => setDarkMode(!darkMode)}
-              className={`relative p-2 rounded-lg transition-colors ${
+              className={`relative p-2 sm:p-2 rounded-lg transition-colors ${
                 darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
               }`}
+              aria-label="Cambiar tema"
             >
               <span aria-hidden className="absolute -inset-1 rounded-lg bg-gradient-to-r from-yellow-300/0 to-purple-400/0 blur-lg opacity-0 hover:opacity-30 transition-opacity" />
-              {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              {darkMode ? <Sun className="h-4 sm:h-5 w-4 sm:w-5" /> : <Moon className="h-4 sm:h-5 w-4 sm:w-5" />}
             </button>
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className={`relative p-2 rounded-lg transition-colors ${
+              className={`relative p-2 sm:p-2 rounded-lg transition-colors ${
                 darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
               }`}
+              aria-label="Configuración"
             >
               <span aria-hidden className="absolute -inset-1 rounded-lg bg-gradient-to-r from-blue-400/0 to-pink-400/0 blur-lg opacity-0 hover:opacity-30 transition-opacity" />
-              <Settings className="h-5 w-5" />
+              <Settings className="h-4 sm:h-5 w-4 sm:w-5" />
             </button>
           </div>
         </div>
@@ -546,21 +549,25 @@ function App() {
         <div className={`${
           darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
         } border-b transition-colors duration-300`}>
-          <div className="max-w-4xl mx-auto px-4 py-4">
-            <div className="flex items-center space-x-4">
+          <div className="max-w-4xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <button
                 onClick={clearChat}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm sm:text-base"
+                aria-label="Limpiar chat"
               >
                 <Trash2 className="h-4 w-4" />
-                <span>Limpiar Chat</span>
+                <span className="hidden sm:inline">Limpiar Chat</span>
+                <span className="sm:hidden">Limpiar</span>
               </button>
               <button
                 onClick={exportChat}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm sm:text-base"
+                aria-label="Exportar chat"
               >
                 <Download className="h-4 w-4" />
-                <span>Exportar</span>
+                <span className="hidden sm:inline">Exportar</span>
+                <span className="sm:hidden">Descargar</span>
               </button>
             </div>
           </div>
@@ -582,15 +589,15 @@ function App() {
         } rounded-2xl shadow-xl border transition-colors duration-300 overflow-hidden transition-all hover:ring-2 hover:ring-purple-400/30 hover:shadow-[0_0_40px_rgba(168,85,247,0.25)]`}>
           
           {/* Messages Area */}
-          <div className="h-[500px] overflow-y-auto p-6 space-y-4">
+          <div className="h-[400px] sm:h-[500px] overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4">
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex items-start space-x-3 ${
+                className={`flex items-start space-x-2 sm:space-x-3 ${
                   message.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''
                 }`}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                <div className={`w-7 sm:w-8 h-7 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs sm:text-sm ${
                   message.sender === 'user'
                     ? 'bg-blue-500'
                     : 'bg-gradient-to-r from-purple-500 to-pink-500'
@@ -602,7 +609,7 @@ function App() {
                   )}
                 </div>
                 
-                <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl transform transition-transform ${
+                <div className={`max-w-[70%] sm:max-w-xs lg:max-w-md px-3 sm:px-4 py-2 sm:py-3 rounded-2xl transform transition-transform text-sm sm:text-base ${
                   message.sender === 'user'
                     ? 'bg-blue-500 text-white hover:-translate-y-0.5'
                     : darkMode
@@ -683,15 +690,16 @@ function App() {
                 <button
                   onClick={startVoiceRecognition}
                   disabled={isListening}
-                  className={`relative p-3 rounded-full transition-colors ${
+                  className={`relative p-2 sm:p-3 rounded-full transition-colors min-w-[40px] sm:min-w-[48px] h-10 sm:h-12 flex items-center justify-center ${
                     isListening
                       ? 'bg-red-500 text-white'
                       : darkMode
                       ? 'bg-gray-600 hover:bg-gray-500 text-gray-300'
                       : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
                   }`}
+                  aria-label="Grabar voz"
                 >
-                  {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                  {isListening ? <MicOff className="h-4 sm:h-5 w-4 sm:w-5" /> : <Mic className="h-4 sm:h-5 w-4 sm:w-5" />}
                 </button>
               </div>
               
@@ -760,9 +768,10 @@ function App() {
               <button
                 onClick={handleSendMessage}
                 disabled={!inputText.trim() || isTyping}
-                className="p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors transform transition-transform hover:scale-105 active:scale-95"
+                className="p-2 sm:p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors transform transition-transform hover:scale-105 active:scale-95 min-w-[40px] sm:min-w-[48px] h-10 sm:h-12 flex items-center justify-center"
+                aria-label="Enviar mensaje"
               >
-                <Send className="h-5 w-5" />
+                <Send className="h-4 sm:h-5 w-4 sm:w-5" />
               </button>
             </div>
           </div>
