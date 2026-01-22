@@ -249,9 +249,9 @@ function App() {
           // Formato: "redirect|url" o "download|url"
           const [linkType, url] = customCommandMatch.content.split('|');
           if (linkType === 'download') {
-            return `📥 **${customCommandMatch.description}**\n\nDescarga: [${url}](${url})`;
+            return `📥 ${customCommandMatch.description}\n\n|||LINK_BUTTON|||download|||${url}|||`;
           } else {
-            return `🔗 **${customCommandMatch.description}**\n\nEnlace: [${url}](${url})`;
+            return `🔗 ${customCommandMatch.description}\n\n|||LINK_BUTTON|||redirect|||${url}|||`;
           }
         }
         return customCommandMatch.content;
@@ -653,7 +653,18 @@ function App() {
                     const isBot = message.sender === 'bot';
                     const pdfMatch = isBot ? message.text.match(/^PDF:\s*(https?:\/\/\S+)/m) : null;
                     const pdfUrl = pdfMatch ? pdfMatch[1] : null;
-                    const displayText = pdfUrl ? message.text.replace(/^PDF:\s*https?:\/\/\S+\s*/m, '').trim() : message.text;
+                    const linkMatch = isBot ? message.text.match(/\|\|\|LINK_BUTTON\|\|\|(\w+)\|\|\|([^|]+)\|\|\|/) : null;
+                    const linkType = linkMatch ? linkMatch[1] : null;
+                    const linkUrl = linkMatch ? linkMatch[2] : null;
+                    
+                    let displayText = message.text;
+                    if (pdfUrl) {
+                      displayText = displayText.replace(/^PDF:\s*https?:\/\/\S+\s*/m, '').trim();
+                    }
+                    if (linkMatch) {
+                      displayText = displayText.replace(/\|\|\|LINK_BUTTON\|\|\|(\w+)\|\|\|([^|]+)\|\|\|/g, '').trim();
+                    }
+                    
                     return (
                       <>
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{displayText}</p>
@@ -672,6 +683,38 @@ function App() {
                           >
                             Descargar PDF
                           </a>
+                        )}
+                        {linkUrl && (
+                          linkType === 'download' ? (
+                            <a
+                              href={linkUrl}
+                              download
+                              className={`inline-flex items-center mt-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                                message.sender === 'user'
+                                  ? 'bg-white/20 text-white hover:bg-white/30'
+                                  : darkMode
+                                  ? 'bg-green-600 hover:bg-green-500 text-white'
+                                  : 'bg-green-500 hover:bg-green-600 text-white'
+                              }`}
+                            >
+                              📥 Descargar
+                            </a>
+                          ) : (
+                            <a
+                              href={linkUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`inline-flex items-center mt-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                                message.sender === 'user'
+                                  ? 'bg-white/20 text-white hover:bg-white/30'
+                                  : darkMode
+                                  ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+                              }`}
+                            >
+                              🔗 Ir al sitio
+                            </a>
+                          )
                         )}
                       </>
                     );
